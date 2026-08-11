@@ -1,0 +1,726 @@
+/* ================================================================
+   PPT ARENA · HOJA DE ESTILOS
+   ------------------------------------------------------------
+   Índice de secciones (usa Ctrl/Cmd + F para saltar rápido):
+     1. VARIABLES CSS (:root)      -> paleta, tipografías, medidas
+     2. TEMA CLARO / OSCURO        -> valores que cambian con [data-tema]
+     3. RESET Y BASE               -> normalización de estilos por defecto
+     4. FONDO DECORATIVO           -> blobs animados de fondo
+     5. LAYOUT GENERAL             -> tarjeta principal del juego
+     6. CABECERA                   -> título + botones de tema/sonido
+     7. PANEL DE MARCADOR          -> puntuación, vidas, botones
+     8. MESA VS                    -> jugador vs cpu
+     9. MENSAJE DE RESULTADO
+    10. BOTONES DE JUGADA          -> piedra / papel / tijera
+    11. OVERLAYS (pausa / game over)
+    12. ANIMACIONES (@keyframes)
+    13. RESPONSIVE (mobile)
+    14. ACCESIBILIDAD (reduced motion, foco visible)
+   ================================================================ */
+
+
+/* ================================================================
+   1. VARIABLES CSS (:root)
+   ------------------------------------------------------------
+   🎨 PARA CAMBIAR LA PALETA DE COLORES DE TODO EL JUEGO
+   solo necesitas editar los valores de esta sección.
+   ================================================================ */
+:root {
+
+  /* --- Tipografías --------------------------------------------- */
+  --font-display: 'Space Grotesk', 'Trebuchet MS', sans-serif; /* Títulos y números grandes */
+  --font-body: 'Inter', system-ui, sans-serif;                 /* Texto general */
+
+  /* --- Colores de marca / degradados ----------------------------
+     Estos son los colores "firma" del juego: se usan en el logo,
+     los botones principales y los brillos neón al pasar el ratón. */
+  --color-marca-1: #7C5CFF;   /* violeta */
+  --color-marca-2: #FF5CAA;   /* magenta */
+  --color-marca-3: #4CF3FF;   /* cian neón (brillos / acentos) */
+  --degradado-marca: linear-gradient(135deg, var(--color-marca-1), var(--color-marca-2));
+  --degradado-marca-hover: linear-gradient(135deg, var(--color-marca-2), var(--color-marca-1));
+
+  /* --- Colores de estado (resultado de la ronda) ----------------- */
+  --color-victoria: #4ADE80;  /* verde  -> el jugador gana la ronda   */
+  --color-derrota: #FF5C6C;   /* rojo   -> el jugador pierde la ronda */
+  --color-empate: #FFD166;    /* ámbar  -> empate                     */
+
+  /* --- Medidas y formas ------------------------------------------ */
+  --radio-borde-lg: 28px;   /* bordes muy redondeados (tarjetas)   */
+  --radio-borde-md: 18px;   /* bordes redondeados (botones)        */
+  --radio-borde-sm: 12px;   /* bordes redondeados (elementos chicos)*/
+  --sombra-elevada: 0 20px 60px -10px rgba(20, 10, 40, 0.45);
+  --transicion-rapida: 180ms ease;
+  --transicion-media: 350ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* --- Valores que cambian según el tema (por defecto = oscuro) -- */
+  --color-fondo: #14101F;
+  --color-fondo-degradado-1: #1c1330;
+  --color-fondo-degradado-2: #0f0c1c;
+  --color-superficie: rgba(255, 255, 255, 0.06);
+  --color-superficie-borde: rgba(255, 255, 255, 0.12);
+  --color-texto-principal: #F5F3FF;
+  --color-texto-secundario: #B8B0D9;
+  --color-boton-secundario-fondo: rgba(255, 255, 255, 0.08);
+  --color-boton-secundario-texto: #F5F3FF;
+  --sombra-tarjeta-jugada: 0 10px 30px -8px rgba(124, 92, 255, 0.35);
+}
+
+/* ================================================================
+   2. TEMA CLARO / OSCURO
+   ------------------------------------------------------------
+   El atributo [data-tema="claro"] se aplica al <body> vía JS
+   (ver script.js -> módulo de Tema). Al sobreescribir las mismas
+   variables aquí, todo el juego cambia de color automáticamente.
+   ================================================================ */
+body[data-tema='claro'] {
+  --color-fondo: #F3F1FA;
+  --color-fondo-degradado-1: #ffffff;
+  --color-fondo-degradado-2: #ece7fb;
+  --color-superficie: rgba(255, 255, 255, 0.75);
+  --color-superficie-borde: rgba(124, 92, 255, 0.18);
+  --color-texto-principal: #241B3B;
+  --color-texto-secundario: #6C6389;
+  --color-boton-secundario-fondo: rgba(124, 92, 255, 0.08);
+  --color-boton-secundario-texto: #4A3F73;
+  --sombra-elevada: 0 20px 50px -15px rgba(124, 92, 255, 0.25);
+}
+
+
+/* ================================================================
+   3. RESET Y BASE
+   ================================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* el padding/borde no aumentan el tamaño total */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--color-texto-principal);
+  background: radial-gradient(circle at 20% 20%, var(--color-fondo-degradado-1), var(--color-fondo-degradado-2) 60%);
+  background-color: var(--color-fondo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-x: hidden;
+  transition: background-color var(--transicion-media), color var(--transicion-media);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+  color: inherit;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+
+/* ================================================================
+   4. FONDO DECORATIVO
+   ------------------------------------------------------------
+   Manchas de color ("blobs") difuminadas y en movimiento lento
+   que le dan profundidad al fondo sin distraer del juego.
+   ================================================================ */
+.fondo-decorativo {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: flotar 14s ease-in-out infinite;
+}
+
+.blob--1 {
+  width: 420px;
+  height: 420px;
+  top: -10%;
+  left: -8%;
+  background: var(--color-marca-1);
+}
+
+.blob--2 {
+  width: 380px;
+  height: 380px;
+  bottom: -12%;
+  right: -6%;
+  background: var(--color-marca-2);
+  animation-delay: -4s;
+}
+
+.blob--3 {
+  width: 300px;
+  height: 300px;
+  bottom: 20%;
+  left: 30%;
+  background: var(--color-marca-3);
+  opacity: 0.2;
+  animation-delay: -8s;
+}
+
+
+/* ================================================================
+   5. LAYOUT GENERAL
+   ------------------------------------------------------------
+   Tarjeta principal con efecto "glassmorphism": fondo semi-
+   transparente + desenfoque + borde sutil + sombra elevada.
+   ================================================================ */
+.tablero-juego {
+  width: 100%;
+  max-width: 560px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-superficie-borde);
+  border-radius: var(--radio-borde-lg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--sombra-elevada);
+  padding: 28px 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: aparecerTarjeta var(--transicion-media);
+}
+
+
+/* ================================================================
+   6. CABECERA
+   ================================================================ */
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cabecera__titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cabecera__logo {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 4px 10px rgba(124, 92, 255, 0.4));
+}
+
+.cabecera h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Texto con degradado de marca aplicado directamente al texto */
+.texto-degradado {
+  background: var(--degradado-marca);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cabecera__controles {
+  display: flex;
+  gap: 8px;
+}
+
+/* Botones circulares pequeños (tema / sonido) */
+.btn-icono {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  background: var(--color-boton-secundario-fondo);
+  border: 1px solid var(--color-superficie-borde);
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.btn-icono:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.15);
+}
+
+.btn-icono:active {
+  transform: translateY(0) scale(0.96);
+}
+
+
+/* ================================================================
+   7. PANEL DE MARCADOR (puntuación / vidas / acciones)
+   ================================================================ */
+.panel-marcador {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--color-boton-secundario-fondo);
+  border: 1px solid var(--color-superficie-borde);
+  border-radius: var(--radio-borde-md);
+  padding: 14px 16px;
+  flex-wrap: wrap;
+}
+
+.marcador-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.marcador-item--acciones {
+  flex-direction: row;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.marcador-item__etiqueta {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-texto-secundario);
+  font-weight: 600;
+}
+
+.marcador-item__valor {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Corazones de vida */
+.vidas {
+  display: flex;
+  gap: 4px;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+/* Corazón "perdido": se aplica esta clase por JS cuando se pierde una vida */
+.corazon--perdido {
+  opacity: 0.25;
+  filter: grayscale(1);
+  animation: sacudir 420ms ease;
+}
+
+/* Botones secundarios (pausa / reiniciar) */
+.btn-secundario {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 9px 12px;
+  border-radius: var(--radio-borde-sm);
+  background: var(--color-boton-secundario-fondo);
+  color: var(--color-boton-secundario-texto);
+  border: 1px solid var(--color-superficie-borde);
+  white-space: nowrap;
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.btn-secundario:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -6px rgba(124, 92, 255, 0.35);
+}
+
+.btn-secundario:active {
+  transform: translateY(0);
+}
+
+
+/* ================================================================
+   8. MESA VS (jugador contra CPU)
+   ================================================================ */
+.mesa-vs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jugador-caja {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.jugador-caja__etiqueta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-texto-secundario);
+}
+
+/* Círculo donde aparece el emoji de la jugada elegida */
+.jugador-caja__icono {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background: var(--color-boton-secundario-fondo);
+  border: 2px solid var(--color-superficie-borde);
+  box-shadow: var(--sombra-tarjeta-jugada);
+  transition: border-color var(--transicion-rapida);
+}
+
+/* Estados de color aplicados por JS según el resultado de la ronda */
+.jugador-caja__icono--gana {
+  border-color: var(--color-victoria);
+  box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.15);
+}
+
+.jugador-caja__icono--pierde {
+  border-color: var(--color-derrota);
+  box-shadow: 0 0 0 6px rgba(255, 92, 108, 0.15);
+}
+
+.jugador-caja__icono--empata {
+  border-color: var(--color-empate);
+  box-shadow: 0 0 0 6px rgba(255, 209, 102, 0.15);
+}
+
+/* Animación de "revelar" jugada (rebote) */
+.jugador-caja__icono--animar {
+  animation: rebotarJugada var(--transicion-media);
+}
+
+/* Indicador central "VS" */
+.vs-central {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--degradado-marca);
+  flex-shrink: 0;
+}
+
+.vs-central__texto {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+}
+
+/* Pulso continuo del VS mientras se espera una jugada */
+.vs-central--pulso {
+  animation: pulsarVs 1.6s ease-in-out infinite;
+}
+
+
+/* ================================================================
+   9. MENSAJE DE RESULTADO
+   ================================================================ */
+.mensaje-resultado {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  min-height: 24px;
+  color: var(--color-texto-secundario);
+  transition: color var(--transicion-rapida);
+}
+
+.mensaje-resultado--victoria { color: var(--color-victoria); }
+.mensaje-resultado--derrota  { color: var(--color-derrota); }
+.mensaje-resultado--empate   { color: var(--color-empate); }
+
+/* Pequeña animación de entrada cada vez que cambia el mensaje */
+.mensaje-resultado--animar {
+  animation: aparecerMensaje 320ms ease;
+}
+
+
+/* ================================================================
+   10. BOTONES DE JUGADA (piedra / papel / tijera)
+   ================================================================ */
+.controles-jugada {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-jugada {
+  flex: 1;
+  max-width: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 8px;
+  border-radius: var(--radio-borde-md);
+  background: var(--color-boton-secundario-fondo);
+  border: 1px solid var(--color-superficie-borde);
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Brillo degradado que aparece por detrás al pasar el ratón (efecto neón) */
+.btn-jugada::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--degradado-marca);
+  opacity: 0;
+  transition: opacity var(--transicion-rapida);
+  z-index: 0;
+}
+
+.btn-jugada__icono,
+.btn-jugada__texto {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-jugada__icono {
+  font-size: 2.1rem;
+  transition: transform var(--transicion-rapida);
+}
+
+.btn-jugada__texto {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-boton-secundario-texto);
+}
+
+.btn-jugada:hover {
+  transform: translateY(-4px);
+  border-color: transparent;
+  box-shadow: 0 12px 30px -8px rgba(124, 92, 255, 0.55), 0 0 24px rgba(76, 243, 255, 0.25);
+}
+
+.btn-jugada:hover::before {
+  opacity: 1;
+}
+
+.btn-jugada:hover .btn-jugada__icono {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+.btn-jugada:hover .btn-jugada__texto {
+  color: #fff;
+}
+
+.btn-jugada:active {
+  transform: translateY(-1px) scale(0.97);
+}
+
+/* Estado deshabilitado (mientras se resuelve una ronda o en pausa) */
+.btn-jugada:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-jugada:disabled:hover::before {
+  opacity: 0;
+}
+
+/* Botón "presionado" que dispara la animación de sacudida (feedback físico) */
+.btn-jugada--presionado {
+  animation: presionarBoton 220ms ease;
+}
+
+
+/* ================================================================
+   11. OVERLAYS (pausa / fin de partida)
+   ================================================================ */
+.overlay-pausa {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 6, 20, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: aparecerMensaje 220ms ease;
+}
+
+.overlay-pausa.oculto {
+  display: none;
+}
+
+.overlay-pausa__caja {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-superficie-borde);
+  border-radius: var(--radio-borde-lg);
+  box-shadow: var(--sombra-elevada);
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 320px;
+  backdrop-filter: blur(24px);
+}
+
+.overlay-pausa__caja h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+}
+
+.overlay-pausa__caja p {
+  color: var(--color-texto-secundario);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+/* Botón principal grande (reanudar / jugar de nuevo) */
+.btn-primario {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 12px 26px;
+  border-radius: var(--radio-borde-sm);
+  color: #fff;
+  background: var(--degradado-marca);
+  box-shadow: 0 10px 25px -8px rgba(124, 92, 255, 0.6);
+  transition: transform var(--transicion-rapida), filter var(--transicion-rapida);
+}
+
+.btn-primario:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.btn-primario:active {
+  transform: translateY(0);
+}
+
+
+/* ================================================================
+   12. ANIMACIONES (@keyframes)
+   ================================================================ */
+
+/* Aparición suave de la tarjeta principal al cargar la página */
+@keyframes aparecerTarjeta {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Flotación lenta de los blobs decorativos de fondo */
+@keyframes flotar {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(30px, -20px) scale(1.08); }
+}
+
+/* Pulso continuo del círculo "VS" */
+@keyframes pulsarVs {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.5); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(124, 92, 255, 0); }
+}
+
+/* Rebote al revelar la jugada del jugador o de la CPU */
+@keyframes rebotarJugada {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* Sacudida al perder una vida (corazón apagado) */
+@keyframes sacudir {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px) rotate(-8deg); }
+  40%      { transform: translateX(4px) rotate(8deg); }
+  60%      { transform: translateX(-3px) rotate(-4deg); }
+  80%      { transform: translateX(3px) rotate(4deg); }
+}
+
+/* Aparición del mensaje de resultado */
+@keyframes aparecerMensaje {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Efecto físico al presionar un botón de jugada */
+@keyframes presionarBoton {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+
+/* ================================================================
+   13. RESPONSIVE (pantallas pequeñas)
+   ================================================================ */
+@media (max-width: 480px) {
+  .tablero-juego {
+    padding: 20px 16px;
+    gap: 18px;
+    border-radius: 22px;
+  }
+
+  .jugador-caja__icono {
+    width: 84px;
+    height: 84px;
+    font-size: 2.2rem;
+  }
+
+  .vs-central {
+    width: 42px;
+    height: 42px;
+  }
+
+  .btn-jugada {
+    padding: 12px 4px;
+  }
+
+  .btn-jugada__icono {
+    font-size: 1.7rem;
+  }
+
+  .panel-marcador {
+    justify-content: center;
+  }
+
+  .marcador-item--acciones {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ================================================================
+   14. ACCESIBILIDAD
+   ================================================================ */
+
+/* Respeta la preferencia del sistema de reducir animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Anillo de foco visible al navegar con teclado (Tab) */
+button:focus-visible {
+  outline: 2px solid var(--color-marca-3);
+  outline-offset: 2px;
+}

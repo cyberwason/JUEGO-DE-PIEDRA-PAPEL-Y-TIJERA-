@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PPT Arena · Piedra, Papel o Tijera</title>
+  <meta name="description" content="Juego interactivo de Piedra, Papel o Tijera contra la CPU, con animaciones, sonidos y modo claro/oscuro." />
+
+  <!-- ============================================================
+       TIPOGRAFÍAS (Google Fonts)
+       - "Space Grotesk": tipografía de titulares, look "arcade" moderno.
+       - "Inter": tipografía de texto, muy legible en cualquier tamaño.
+       Si quieres cambiar las fuentes, solo reemplaza estos links
+       y las variables --font-display / --font-body en styles.css
+  ============================================================ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Hoja de estilos principal -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       FONDO DECORATIVO
+       Capa puramente visual (blobs/degradados animados) que vive
+       detrás de todo el contenido. No contiene información.
+  ============================================================ -->
+  <div class="fondo-decorativo" aria-hidden="true">
+    <span class="blob blob--1"></span>
+    <span class="blob blob--2"></span>
+    <span class="blob blob--3"></span>
+  </div>
+
+  <!-- ============================================================
+       CONTENEDOR PRINCIPAL DEL JUEGO
+       Todo el juego vive dentro de esta tarjeta central tipo
+       "glassmorphism" para mantenerlo centrado y con foco visual.
+  ============================================================ -->
+  <main class="tablero-juego">
+
+    <!-- ----------------------------------------------------------
+         CABECERA: título + controles globales (tema y sonido)
+    ---------------------------------------------------------- -->
+    <header class="cabecera">
+      <div class="cabecera__titulo">
+        <span class="cabecera__logo" aria-hidden="true">✊✋✌️</span>
+        <h1>PPT <span class="texto-degradado">Arena</span></h1>
+      </div>
+
+      <div class="cabecera__controles">
+        <!-- Botón para silenciar / activar sonido -->
+        <button id="btnSonido" class="btn-icono" type="button" aria-pressed="false" title="Silenciar sonido">
+          <span id="iconoSonido" aria-hidden="true">🔊</span>
+        </button>
+
+        <!-- Botón para alternar entre modo claro y oscuro -->
+        <button id="btnTema" class="btn-icono" type="button" aria-pressed="false" title="Cambiar tema">
+          <span id="iconoTema" aria-hidden="true">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ----------------------------------------------------------
+         PANEL SUPERIOR: puntuación, vidas y acciones de partida
+    ---------------------------------------------------------- -->
+    <section class="panel-marcador" aria-label="Marcador de la partida">
+
+      <!-- Puntuación acumulada del jugador -->
+      <div class="marcador-item">
+        <span class="marcador-item__etiqueta">Puntuación</span>
+        <span id="puntuacion" class="marcador-item__valor">0</span>
+      </div>
+
+      <!-- Vidas representadas con corazones -->
+      <div class="marcador-item">
+        <span class="marcador-item__etiqueta">Vidas</span>
+        <div id="vidas" class="vidas" aria-label="3 vidas restantes">
+          <span class="corazon" data-vida="1">❤️</span>
+          <span class="corazon" data-vida="2">❤️</span>
+          <span class="corazon" data-vida="3">❤️</span>
+        </div>
+      </div>
+
+      <!-- Botones de control de partida -->
+      <div class="marcador-item marcador-item--acciones">
+        <button id="btnPausa" class="btn-secundario" type="button">⏸️ Pausa</button>
+        <button id="btnReiniciar" class="btn-secundario" type="button">🔄 Reiniciar</button>
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------
+         MESA DE COMBATE: JUGADOR vs CPU
+    ---------------------------------------------------------- -->
+    <section class="mesa-vs" aria-live="polite">
+
+      <!-- Lado del jugador -->
+      <div class="jugador-caja jugador-caja--player">
+        <span class="jugador-caja__etiqueta">TÚ</span>
+        <div id="jugadaJugador" class="jugador-caja__icono">❓</div>
+      </div>
+
+      <!-- Indicador central "VS" con efecto de pulso -->
+      <div class="vs-central">
+        <span class="vs-central__texto">VS</span>
+      </div>
+
+      <!-- Lado de la CPU -->
+      <div class="jugador-caja jugador-caja--cpu">
+        <span class="jugador-caja__etiqueta">CPU</span>
+        <div id="jugadaCpu" class="jugador-caja__icono">❓</div>
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------
+         MENSAJE DE RESULTADO DE LA RONDA
+    ---------------------------------------------------------- -->
+    <p id="mensajeResultado" class="mensaje-resultado" role="status">
+      Elige tu jugada para comenzar la partida
+    </p>
+
+    <!-- ----------------------------------------------------------
+         BOTONES DE ACCIÓN: Piedra, Papel, Tijera
+    ---------------------------------------------------------- -->
+    <section class="controles-jugada" aria-label="Elige tu jugada">
+      <button class="btn-jugada" type="button" data-jugada="piedra">
+        <span class="btn-jugada__icono" aria-hidden="true">✊</span>
+        <span class="btn-jugada__texto">Piedra</span>
+      </button>
+
+      <button class="btn-jugada" type="button" data-jugada="papel">
+        <span class="btn-jugada__icono" aria-hidden="true">✋</span>
+        <span class="btn-jugada__texto">Papel</span>
+      </button>
+
+      <button class="btn-jugada" type="button" data-jugada="tijera">
+        <span class="btn-jugada__icono" aria-hidden="true">✌️</span>
+        <span class="btn-jugada__texto">Tijera</span>
+      </button>
+    </section>
+
+    <!-- ----------------------------------------------------------
+         PIE: pequeño texto informativo
+    ---------------------------------------------------------- -->
+    <footer class="pie-juego">
+      <p>Piedra vence a Tijera · Tijera vence a Papel · Papel vence a Piedra</p>
+    </footer>
+  </main>
+
+  <!-- ============================================================
+       OVERLAY DE PAUSA
+       Se muestra por encima del tablero cuando el juego está en pausa.
+  ============================================================ -->
+  <div id="overlayPausa" class="overlay-pausa oculto">
+    <div class="overlay-pausa__caja">
+      <h2>⏸️ Juego en pausa</h2>
+      <p>Pulsa reanudar para seguir jugando</p>
+      <button id="btnReanudar" class="btn-primario" type="button">▶️ Reanudar</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       OVERLAY DE FIN DE PARTIDA (Game Over)
+       Se muestra cuando el jugador pierde todas sus vidas.
+  ============================================================ -->
+  <div id="overlayGameOver" class="overlay-pausa oculto">
+    <div class="overlay-pausa__caja">
+      <h2>💀 ¡Juego terminado!</h2>
+      <p>Tu puntuación final fue de <strong id="puntuacionFinal">0</strong> puntos</p>
+      <button id="btnJugarDeNuevo" class="btn-primario" type="button">🔄 Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <!-- Lógica del juego -->
+  <script src="script.js"></script>
+</body>
+</html>
